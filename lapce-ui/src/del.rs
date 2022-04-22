@@ -1,28 +1,28 @@
-//handling delete keyword
-//use std::cmp;
-use unicode_segmentation::UnicodeSegmentation;
-//use termion::color;
-use termion::event::Key;
-use termion::input::TermRead;
-use termion::raw::{RawTerminal};
+use unicode_segmentation::UnicodeSegmentation;//graphemes
+use termion::event::Key;//Key
+use termion::input::TermRead; //StdinLock
+use termion::raw::{RawTerminal};//Screen
+//mod editor;
+//mod terminal;
 
 #[derive(Default)]
 pub struct Position {
-    pub x: usize,
-    pub y: usize,
+    pub latitude_pos: usize,
+    pub longit_pos: usize,
 }
 
+#[derive(Default)]
 pub struct Editor {
-    cursor_position: Position,
-    document: Document,
+    pub index: Position,
+    pub docs: textEditor,
 }
+
 impl Editor {
-    fn process_keypress(&mut self) -> Result<(), std::io::Error> {
-        let pressed_key = Terminal::read_key()?;
-        match pressed_key {
-            Key::Delete => self.document.delete(&self.cursor_position),/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            
-            _ => (),
+    fn delete_key_press(&mut self) -> Result<(), std::io::Error> {
+        let mut del_key_pressed = Screen::read_key()?;
+        match del_key_pressed {
+            Key::Delete => self.docs.delete(&self.index),/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            empty => (),
         }
         Ok(())
     }
@@ -30,68 +30,60 @@ impl Editor {
 
 
 #[derive(Default)]
-pub struct Document {
-    rows: Vec<Row>,
-    pub file_name: Option<String>,
+pub struct textEditor {
+    line: Vec<LineText>,
 }
 
-impl Document {
-    pub fn row(&self, index: usize) -> Option<&Row> {
-        self.rows.get(index)
-    }
+impl textEditor {
+
     pub fn len(&self) -> usize {
-        self.rows.len()
+        return self.line.len();
     }
 
-    pub fn delete(&mut self, at: &Position) {///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if at.y >= self.len() {
+    pub fn delete(&mut self, current: &Position) {///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        if current.longit_pos >= self.len() {//recursion for delete
             return;
+        } else {
+            let mut idex_line = self.line.get_mut(current.longit_pos).unwrap();
+            idex_line.delete(current.latitude_pos);
         }
-        let row = self.rows.get_mut(at.y).unwrap();
-        row.delete(at.x);
     }
 }
 
 
 #[derive(Default)]
-pub struct Row {
-    string: String,
-    len: usize,
+pub struct LineText {
+    text: String,
+    length: usize,
 }
 
-impl Row {
+impl LineText {
     pub fn len(&self) -> usize {
-        self.len
-    }
-    fn update_len(&mut self) {
-        self.len = self.string[..].graphemes(true).count();
+        return self.length;
     }
     pub fn delete(&mut self, at: usize) {///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if at >= self.len() {
-            return;
-        } else {
-            let mut result: String = self.string[..].graphemes(true).take(at).collect();
-            let remainder: String = self.string[..].graphemes(true).skip(at + 1).collect();
-            result.push_str(&remainder);
-            self.string = result;
+            return;//no deletion necessary
+        } else {//deletion necessary
+            let mut original: String = self.text[..].graphemes(true).take(at).collect();
+            let deleted: String = self.text[..].graphemes(true).skip(at + 1).collect();
+            original.push_str(&deleted);
+            self.text = original;
         }
-        self.update_len();
+        self.length = self.text[..].graphemes(true).count();
+
     }
 }
 
 
-pub struct Terminal {
-    _stdout: RawTerminal<std::io::Stdout>,
-}
-
-impl Terminal {
+pub struct Screen;
+impl Screen {
 pub fn read_key() -> Result<Key, std::io::Error> {////////////////////////////////////////////////////////////////////////////////////////////////////////
-        loop {
-            if let Some(key) = std::io::stdin().lock().keys().next() {
-                return key;
+        loop {//infinite loop
+            if  let Some(mut new_index) = std::io::stdin().lock().keys().next() {//some new value
+                return new_index;
             }
         }
 	}
 
 }
-
